@@ -28,7 +28,8 @@ model_handlers = {
         'text_classifier': 'text',
         'image_classifier': 'vision',
         'object_detector': 'vision',
-        'image_segmenter': 'vision'
+        'image_segmenter': 'vision',
+        'ggnn_classifier': 'ggnn',  # register the GGNN handler here
         }
 
 MODEL_SERVER_VERSION = '1.0'
@@ -144,6 +145,8 @@ class ModelExportUtils(object):
 
                     if '.py' not in path:
                         path = (path.split(':')[0] if ':' in path else path) + '.py'
+                print(file_type)
+                print(path)
 
                 if file_type == "extra_files":
                     for file in path.split(","):

@@ -185,6 +185,7 @@ public class WorkerThread implements Runnable {
                 logger.info("Flushing req. to backend at: " + wtStartTime);
                 backendChannel.writeAndFlush(req).sync();
 
+                logger.info("Flushing done.");
                 long begin = System.currentTimeMillis();
                 ModelWorkerResponse reply = replies.poll(responseTimeout, TimeUnit.SECONDS);
 

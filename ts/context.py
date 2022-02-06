@@ -27,6 +27,9 @@ class Context(object):
         self._metrics = None
         self._limit_max_image_pixels = True
 
+        print("All args: " + "\n".join([str(model_name), str(model_dir), str(
+            manifest), str(batch_size), str(gpu), str(mms_version)]))
+
     @property
     def system_properties(self):
         return self._system_properties

@@ -29,3 +29,8 @@ test/config.properties
 # Custom benchmark artifacts
 instances.yaml
 instances.yaml.backup
+
+# Java Runtime files
+*.class
+frontend/archive/bin/*
+frontend/server/bin/*

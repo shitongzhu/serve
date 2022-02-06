@@ -111,6 +111,8 @@ class TsModelLoader(ModelLoader):
         service.context.metrics = metrics
         initialize_fn(service.context)
 
+        logging.info("Finished loading the model.")
+
         return service
 
     def _load_handler_file(self, handler):

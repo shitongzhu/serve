@@ -51,6 +51,7 @@ class BaseHandler(abc.ABC):
             RuntimeError: Raises the Runtime error when the model.py is missing
 
         """
+        print("Initializing the model...")
         properties = context.system_properties
         self.map_location = "cuda" if torch.cuda.is_available(
         ) and properties.get("gpu_id") is not None else "cpu"
@@ -60,6 +61,7 @@ class BaseHandler(abc.ABC):
             else self.map_location
         )
         self.manifest = context.manifest
+        # print("Initializing the model... Hit1")
 
         model_dir = properties.get("model_dir")
         model_pt_path = None
@@ -67,27 +69,33 @@ class BaseHandler(abc.ABC):
             serialized_file = self.manifest["model"]["serializedFile"]
             model_pt_path = os.path.join(model_dir, serialized_file)
 
+        # print("Initializing the model... Hit2")
+
         # model def file
         model_file = self.manifest["model"].get("modelFile", "")
 
+        print("manifest: ", self.manifest)
+
         if model_file:
-            logger.debug("Loading eager model")
+            logger.info("Loading eager model")
             self.model = self._load_pickled_model(
                 model_dir, model_file, model_pt_path)
             self.model.to(self.device)
         else:
-            logger.debug("Loading torchscript model")
+            logger.info("Loading torchscript model")
             if not os.path.isfile(model_pt_path):
                 raise RuntimeError("Missing the model.pt file")
 
             self.model = self._load_torchscript_model(model_pt_path)
+
+        # print("Initializing the model... Hit3")
 
         self.model.eval()
         if ipex_enabled:
             self.model = self.model.to(memory_format=torch.channels_last)
             self.model = ipex.optimize(self.model)
 
-        logger.debug('Model file %s loaded successfully', model_pt_path)
+        print('Model file %s loaded successfully' % model_pt_path)
 
         # Load class mapping for classifiers
         mapping_file_path = os.path.join(model_dir, "index_to_name.json")
@@ -127,6 +135,8 @@ class BaseHandler(abc.ABC):
         if not os.path.isfile(model_def_path):
             raise RuntimeError("Missing the model.py file")
 
+        # print("_load_pickled_model: Hit1")
+
         module = importlib.import_module(model_file.split(".")[0])
         model_class_definitions = list_classes_from_module(module)
         if len(model_class_definitions) != 1:
@@ -136,8 +146,11 @@ class BaseHandler(abc.ABC):
                 )
             )
 
+        # print("_load_pickled_model: Hit2")
+
         model_class = model_class_definitions[0]
         model = model_class()
+        # print("_load_pickled_model: Hit3")
         if model_pt_path:
             state_dict = torch.load(model_pt_path, map_location=self.device)
             model.load_state_dict(state_dict)

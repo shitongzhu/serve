@@ -26,7 +26,9 @@ class Service(object):
     def __init__(self, model_name, model_dir, manifest, entry_point, gpu, batch_size, limit_max_image_pixels=True):
         self._context = Context(model_name, model_dir, manifest,
                                 batch_size, gpu, ts.__version__, limit_max_image_pixels)
+        # logging.info("Hit inside Service init.")
         self._entry_point = entry_point
+        # logging.info("Service ended.")
 
     @property
     def context(self):
