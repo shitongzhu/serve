@@ -147,10 +147,14 @@ class GGNNClassifier(BaseHandler):
         Loads the model from the context.
         """
         """loads and restores a model from file."""
+        dev = (
+            torch.device("cuda") if torch.cuda.is_available(
+            ) else torch.device("cpu")
+        )
         # logging.info("Loading model from %s | %s" % (model_dir, model_pt_path))
         model_path = model_pt_path
         # logging.info("Loading path: %s" % model_path)
-        checkpoint = torch.load(model_path)
+        checkpoint = torch.load(model_path, map_location=dev)
         self.parent_run_id = checkpoint["run_id"]
         self.global_training_step = checkpoint["global_training_step"]
         self.current_epoch = checkpoint["epoch"]
@@ -252,8 +256,16 @@ class GGNNClassifier(BaseHandler):
             graph=merge_graph,
             vocabulary=self.vocab,
         )
-        inputs = dataset.data2input4serve(data)
-        prediction = self.model(inputs)
+        inputs = dataset.data2input4serve(data, self.config)
+        prediction = self.model(
+            vocab_ids=inputs["vocab_ids"],
+            labels=inputs["labels"],
+            edge_lists=inputs["edge_lists"],
+            pos_lists=inputs["pos_lists"],
+            node_types=inputs["node_types"],
+            graph_nodes_list=inputs["graph_nodes_list"],
+            num_graphs=inputs["num_graphs"],
+        )
         return prediction
 
 
@@ -272,7 +284,28 @@ if __name__ == "__main__":
     test_data_json = REPO_ROOT / "test_merge_graph.json"
     with open(test_data_json, "r") as f:
         data = str(f.read())
-    ggnn.initialize(Context(model_name=None, model_dir=None,
-                    manifest=None, batch_size=None, gpu=None, mms_version=None))
+    mock_manifest = {
+        'createdOn': '05/02/2022 21:24:26', 
+        'runtime': 'python', 
+        'model': {
+            'modelName': 'mergegraph0205', 
+            'serializedFile': '2022-01-29_22:56:55_296615_model_best.pickle', 
+            'handler': 'ggnn_classifier', 
+            'modelFile': 'ggnn_model.py', 
+            'modelVersion': '0.0.1'
+        }, 
+        'archiverVersion': '0.5.0'
+    }
+    ggnn.initialize(
+        Context(
+            model_name=None, 
+            model_dir=REPO_ROOT / "log/train-ggnn-model",
+            manifest=mock_manifest,
+            batch_size=1, 
+            gpu=1, 
+            mms_version='0.5.0',
+            limit_max_image_pixels=True,
+        )
+    )
     pred = ggnn.inference(data)
-    print(pred)
+    print("Prediction for test data: %s" % pred)

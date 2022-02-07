@@ -14,6 +14,7 @@ class Context(object):
     def __init__(self, model_name, model_dir, manifest, batch_size, gpu, mms_version, limit_max_image_pixels=True):
         self.model_name = model_name
         self.manifest = manifest
+        print("manifest: %s", self.manifest)
         self._system_properties = {
             "model_dir": model_dir,
             "gpu_id": gpu,
@@ -22,6 +23,7 @@ class Context(object):
             "server_version": mms_version,
             "limit_max_image_pixels": limit_max_image_pixels,
         }
+        print("system_properties: %s", self._system_properties)
         self.request_ids = None
         self.request_processor = None
         self._metrics = None
