@@ -2,11 +2,10 @@
 Module for text classification default handler
 DOES NOT SUPPORT BATCH!
 """
-from email.policy import strict
-from pyexpat import model
 import sys
 from time import sleep
 from ..context import Context
+import time
 
 REPO_DIR = "/data/szhu014/"
 # We need to add module path to sys.path so that we can import
@@ -35,7 +34,6 @@ from .base_handler import BaseHandler
 # from base_handler import BaseHandler
 import torch.nn.functional as F
 import torch
-from abc import ABC
 import logging
 from dataset import AblationVocab
 
@@ -223,6 +221,17 @@ class GGNNClassifier(BaseHandler):
         # data_input = json.loads(data_input)
         return data_input
 
+    def postprocess(self, data):
+        logits = data[0]
+        pred = F.softmax(logits, dim=1).tolist()
+        preds = [
+            {
+                "SHOULD_NOT_MERGE": pred[0][0],
+                "SHOULD_MERGE": pred[0][1],
+            }
+        ]
+        return preds
+
     def initialize(self, context):
         """
         Loads the model as well as ProGraML graphs to memory to avoid
@@ -307,5 +316,7 @@ if __name__ == "__main__":
             limit_max_image_pixels=True,
         )
     )
+    start = time.time()
     pred = ggnn.inference(data)
-    print("Prediction for test data: %s" % pred)
+    end = time.time()
+    print("Prediction for test data: %s | Elapsed time: %f" % (pred, end - start))
