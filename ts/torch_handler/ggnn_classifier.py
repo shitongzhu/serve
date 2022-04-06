@@ -2,6 +2,22 @@
 Module for text classification default handler
 DOES NOT SUPPORT BATCH!
 """
+from dataset import AblationVocab
+import logging
+import torch
+import torch.nn.functional as F
+from .base_handler import BaseHandler
+import dataset
+from torch_geometric.data import Data
+from pathlib import Path
+from typing import Dict
+from programl.proto.program_graph_pb2 import ProgramGraph
+import ggnn_model
+import configs
+from run import DOC_DESC, REPO_ROOT
+import utils
+from docopt import docopt
+import json
 import sys
 from time import sleep
 from ..context import Context
@@ -15,27 +31,10 @@ PATH_TO_PROGRAML_SCRIPTS = "/data/szhu014/NeuSE/scripts"
 sys.path.append(PATH_TO_PROGRAML_SCRIPTS)
 PATH_TO_PROGRAML_SCRIPTS = "/data/szhu014/NeuSE/serve"
 sys.path.append(PATH_TO_PROGRAML_SCRIPTS)
-import json
 
 VOCAB_PATH = "/data/szhu014/NeuSE/dataset/vocab/programl.csv"
 
 print("All searchable dirs (for imports): %s" % sys.path)
-from docopt import docopt
-import utils
-from run import DOC_DESC, REPO_ROOT
-import configs
-import ggnn_model
-from programl.proto.program_graph_pb2 import ProgramGraph
-from typing import Dict
-from pathlib import Path
-from torch_geometric.data import Data
-import dataset
-from .base_handler import BaseHandler
-# from base_handler import BaseHandler
-import torch.nn.functional as F
-import torch
-import logging
-from dataset import AblationVocab
 
 
 logger = logging.getLogger(__name__)
@@ -107,6 +106,8 @@ def convert_merge_gragh_to_data(
 # Note that we don't have secondary abstraction layer for this handler
 # at the moment. We will try to add it in the future for different
 # concrete tasks (e.g., classification, regression, etc.).
+
+
 class GGNNClassifier(BaseHandler):
     """
     Handler for graph classifications over MergeGraph.
@@ -146,17 +147,14 @@ class GGNNClassifier(BaseHandler):
         """
         """loads and restores a model from file."""
         dev = (
-            torch.device("cuda") if torch.cuda.is_available(
+            torch.device("cuda:%s" % self.gpu_id) if torch.cuda.is_available(
             ) else torch.device("cpu")
         )
-        # logging.info("Loading model from %s | %s" % (model_dir, model_pt_path))
         model_path = model_pt_path
-        # logging.info("Loading path: %s" % model_path)
         checkpoint = torch.load(model_path, map_location=dev)
         self.parent_run_id = checkpoint["run_id"]
         self.global_training_step = checkpoint["global_training_step"]
         self.current_epoch = checkpoint["epoch"]
-        # logging.info("Loaded")
 
         config_dict = (
             checkpoint["config"]
@@ -178,24 +176,15 @@ class GGNNClassifier(BaseHandler):
         ), "Can only use --skip_restore_config if --model is given."
         # initialize config from --model and compare to skipped config from restore.
 
-        # logging.info("Loading config.")
         _, Config = MODEL_CLASSES[self.args["--model"]]
-        # logging.info("Loading config - Hit2")
         self.config = Config.from_dict(self.parse_config_params(self.args))
-        # logging.info("Loading config - Hit3")
         self.config.check_equal(config_dict)
-
-        # logging.info("Loaded config.")
 
         test_only = self.args.get("--test", False)
         Model = getattr(ggnn_model, checkpoint["model_name"])
 
-        # logging.info("Loaded config -- Hit2.")
-
         model = Model(self.config, test_only=test_only)
-        # logging.info("Loaded config -- Hit2.5: %s" % checkpoint["model_state_dict"].keys())
         model.load_state_dict(checkpoint["model_state_dict"], strict=False)
-        # logging.info("Loaded config -- Hit3.")
         print(
             f"*RESTORED* model parameters from checkpoint {str(model_path)}.")
         if not self.args.get(
@@ -211,14 +200,12 @@ class GGNNClassifier(BaseHandler):
         """
         # Load the MergeGraphs.
         programl_graph_dir = REPO_ROOT / "dataset/ir-programl"
-        # programl_graph_dir = context.programl_graph_dir
         return utils.scan_programl_graph_dir(programl_graph_dir)
 
     def preprocess(self, data):
         # Let us see what happens here.
         assert len(data) == 1, "[ERROR] Multiple graphs in data."
         data_input = data[0]["body"].decode()
-        # data_input = json.loads(data_input)
         return data_input
 
     def postprocess(self, data):
@@ -239,6 +226,7 @@ class GGNNClassifier(BaseHandler):
         """
         print("Initializing the GGNN model inside initialize...")
         self.initialized = False
+        self.gpu_id = context._system_properties["gpu_id"]
         super().initialize(context)
         # First, load stuff.
         self.program_graphs = self._load_programl_graphs(context)
@@ -294,24 +282,24 @@ if __name__ == "__main__":
     with open(test_data_json, "r") as f:
         data = str(f.read())
     mock_manifest = {
-        'createdOn': '05/02/2022 21:24:26', 
-        'runtime': 'python', 
+        'createdOn': '05/02/2022 21:24:26',
+        'runtime': 'python',
         'model': {
-            'modelName': 'mergegraph0205', 
-            'serializedFile': '2022-01-29_22:56:55_296615_model_best.pickle', 
-            'handler': 'ggnn_classifier', 
-            'modelFile': 'ggnn_model.py', 
+            'modelName': 'mergegraph0205',
+            'serializedFile': '2022-01-29_22:56:55_296615_model_best.pickle',
+            'handler': 'ggnn_classifier',
+            'modelFile': 'ggnn_model.py',
             'modelVersion': '0.0.1'
-        }, 
+        },
         'archiverVersion': '0.5.0'
     }
     ggnn.initialize(
         Context(
-            model_name=None, 
+            model_name=None,
             model_dir=REPO_ROOT / "log/train-ggnn-model",
             manifest=mock_manifest,
-            batch_size=1, 
-            gpu=1, 
+            batch_size=1,
+            gpu=1,
             mms_version='0.5.0',
             limit_max_image_pixels=True,
         )
@@ -319,4 +307,5 @@ if __name__ == "__main__":
     start = time.time()
     pred = ggnn.inference(data)
     end = time.time()
-    print("Prediction for test data: %s | Elapsed time: %f" % (pred, end - start))
+    print("Prediction for test data: %s | Elapsed time: %f" %
+          (pred, end - start))

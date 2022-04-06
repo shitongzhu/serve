@@ -69,6 +69,8 @@ class TsModelLoader(ModelLoader):
         :param limit_max_image_pixels:
         :return:
         """
+        gpu_id = '1'
+
         logging.debug("Loading model - working dir: %s", os.getcwd())
         # TODO: Request ID is not given. UUID is a temp UUID.
         metrics = MetricsStore(uuid.uuid4(), model_name)
