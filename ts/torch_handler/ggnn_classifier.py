@@ -2,24 +2,17 @@
 Module for text classification default handler
 DOES NOT SUPPORT BATCH!
 """
-from dataset import AblationVocab
 import logging
 import torch
 import torch.nn.functional as F
 from .base_handler import BaseHandler
-import dataset
 from torch_geometric.data import Data
 from pathlib import Path
 from typing import Dict
 from programl.proto.program_graph_pb2 import ProgramGraph
-import ggnn_model
-import configs
-from run import DOC_DESC, REPO_ROOT
-import utils
 from docopt import docopt
 import json
 import sys
-from time import sleep
 from ..context import Context
 import time
 
@@ -31,6 +24,13 @@ PATH_TO_PROGRAML_SCRIPTS = "/data/szhu014/NeuSE/scripts"
 sys.path.append(PATH_TO_PROGRAML_SCRIPTS)
 PATH_TO_PROGRAML_SCRIPTS = "/data/szhu014/NeuSE/serve"
 sys.path.append(PATH_TO_PROGRAML_SCRIPTS)
+
+import dataset  # noqa
+from dataset import AblationVocab  # noqa
+import utils  # noqa
+import ggnn_model  # noqa
+import configs  # noqa
+from run import DOC_DESC, REPO_ROOT  # noqa
 
 VOCAB_PATH = "/data/szhu014/NeuSE/dataset/vocab/programl.csv"
 
