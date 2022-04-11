@@ -13,29 +13,30 @@ from programl.proto.program_graph_pb2 import ProgramGraph
 from docopt import docopt
 import json
 import sys
+import os
+import getpass
 from ..context import Context
 import time
 
-REPO_DIR = "/data/szhu014/"
-# We need to add module path to sys.path so that we can import
-PATH_TO_PROGRAML_GGNN = "/data/szhu014/NeuSE/scripts/ggnn"
+REPO_ROOT = "/data/" + getpass.getuser() + "/NeuSE"
+print("REPO_ROOT: %s" % REPO_ROOT)
+PATH_TO_PROGRAML_GGNN = REPO_ROOT + "/scripts/ggnn"
 sys.path.append(PATH_TO_PROGRAML_GGNN)
-PATH_TO_PROGRAML_SCRIPTS = "/data/szhu014/NeuSE/scripts"
+PATH_TO_PROGRAML_SCRIPTS = REPO_ROOT + "/scripts"
 sys.path.append(PATH_TO_PROGRAML_SCRIPTS)
-PATH_TO_PROGRAML_SCRIPTS = "/data/szhu014/NeuSE/serve"
+PATH_TO_PROGRAML_SCRIPTS = REPO_ROOT + "/serve"
 sys.path.append(PATH_TO_PROGRAML_SCRIPTS)
+VOCAB_PATH = REPO_ROOT + "/dataset/vocab/programl.csv"
+REPO_ROOT = Path(REPO_ROOT)
+
+print("All searchable dirs (for imports from ggnn_classifier): %s" % sys.path)
 
 import dataset  # noqa
 from dataset import AblationVocab  # noqa
 import utils  # noqa
 import ggnn_model  # noqa
 import configs  # noqa
-from run import DOC_DESC, REPO_ROOT  # noqa
-
-VOCAB_PATH = "/data/szhu014/NeuSE/dataset/vocab/programl.csv"
-
-print("All searchable dirs (for imports): %s" % sys.path)
-
+from run import DOC_DESC  # noqa
 
 logger = logging.getLogger(__name__)
 
