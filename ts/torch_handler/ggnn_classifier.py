@@ -139,7 +139,7 @@ class GGNNClassifier(BaseHandler):
     def _load_pickled_model(
         self,
         model_dir,
-        model_file,  # unused at the moment
+        model_file,
         model_pt_path
     ):
         """
@@ -192,7 +192,7 @@ class GGNNClassifier(BaseHandler):
         ):  # only restore opt if needed. opt should be None o/w.
             model.opt.load_state_dict(checkpoint["optimizer_state_dict"])
             print(f"*RESTORED* optimizer parameters from checkpoint as well.")
-        return model
+        return model.to(dev)
 
     def _load_programl_graphs(self, context):
         """
@@ -234,7 +234,7 @@ class GGNNClassifier(BaseHandler):
         self.initialized = True
 
     # TODO: add support for batching.
-    def inference(self, data, *args, **kwargs):
+    def inference(self, data, debug=True, *args, **kwargs):
         """The Inference Request is made through this function and the user
         needs to override the inference function to customize it.
 
@@ -253,7 +253,18 @@ class GGNNClassifier(BaseHandler):
             graph=merge_graph,
             vocabulary=self.vocab,
         )
-        inputs = dataset.data2input4serve(data, self.config)
+        inputs = dataset.data2input4serve(data, self.config, dev=self.gpu_id)
+
+        if debug:
+            print("[DEBUG] Device of vocab_ids: %s" %
+                  inputs["vocab_ids"].get_device())
+            print("[DEBUG] Device of labels: %s" %
+                  inputs["labels"].get_device())
+            print("[DEBUG] Device of graph_nodes_list: %s" %
+                  inputs["graph_nodes_list"].get_device())
+            print(inputs["pos_lists"])
+            print("Specified device: %s" % self.gpu_id)
+
         prediction = self.model(
             vocab_ids=inputs["vocab_ids"],
             labels=inputs["labels"],
