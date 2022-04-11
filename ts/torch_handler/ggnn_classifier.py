@@ -234,7 +234,7 @@ class GGNNClassifier(BaseHandler):
         self.initialized = True
 
     # TODO: add support for batching.
-    def inference(self, data, debug=True, *args, **kwargs):
+    def inference(self, data, debug=False, *args, **kwargs):
         """The Inference Request is made through this function and the user
         needs to override the inference function to customize it.
 
